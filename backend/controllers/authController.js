@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import User from '../models/User.js';
+import nodemailer from 'nodemailer';
+import Mailgen from 'mailgen';
 
 class authController {
     signup = async (req, res) => {
@@ -14,10 +16,9 @@ class authController {
                 password: bcrypt.hashSync(req.body.password, 8)
             });
             const savedUser = await user.save();
+            // const link = `http://localhost:4000/`
+            await this.verifyEmail(req.body.email);
             res.status(200).json(savedUser);
-            // res.status(200).send({ 
-            //     message: "User Registered successfully"
-            // });
         } catch (error) {
             console.log(error);
             res.status(500).send({
@@ -79,6 +80,31 @@ class authController {
         res.clearCookie('accessToken'); // Replace 'accessToken' with your token cookie name
         return res.status(200).json({ message: 'Logout successful' });
     };
+
+    verifyEmail = async (email) => {
+        try {
+            let transporter = nodemailer.createTransport({
+                service: 'Gmail',
+                auth: {
+                    user: process.env.EMAIL,
+                    pass: process.env.PASSWORD
+                }
+            })
+    
+            let info =  await transporter.sendMail({
+                from: process.env.EMAIL,
+                to: email,
+                subject: 'Account Verification',
+                text: `Welcome`,
+                html:`
+                    <h1>Hello! Welcome to our website.</h1>
+                    <a href=${link}>Click here to activate your account</a>
+                `
+            })
+        } catch (error) {
+            console.log(error, "mail failed");
+        }
+    }
 }
 
 export default authController;
